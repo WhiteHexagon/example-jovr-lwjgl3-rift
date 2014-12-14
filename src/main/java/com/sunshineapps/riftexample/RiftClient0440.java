@@ -28,6 +28,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
@@ -79,7 +83,6 @@ public class RiftClient0440 {
     private final FloatBuffer modelviewDFB;
     private FixedTexture cheq;
     
-    
     // Rift Specific
     private Hmd hmd;
     private int frameCount = -1;
@@ -96,6 +99,18 @@ public class RiftClient0440 {
     // Scene
     private Matrix4f player;
     
+    //FPS
+    private final int fpsReportingPeriodSeconds = 5;
+    private final ScheduledExecutorService fpsCounter = Executors.newSingleThreadScheduledExecutor();
+    private final AtomicInteger frames = new AtomicInteger(0);
+    private final AtomicInteger fps = new AtomicInteger(0);
+    Runnable fpsJob = new Runnable() {
+        public void run() {
+            int frameCount = frames.getAndSet(0);
+            fps.set(frameCount/fpsReportingPeriodSeconds);
+            System.out.println(frameCount+" frames in "+fpsReportingPeriodSeconds+"s. "+fps.get()+"fps");
+        }
+    };
     
     public RiftClient0440() {
         System.out.println("RiftClient0440()");
@@ -349,20 +364,14 @@ public class RiftClient0440 {
         GL11.glLoadMatrix(modelviewDFB);
 
     
-        
-        
+        //fps
+        fpsCounter.scheduleAtFixedRate(fpsJob, 0, fpsReportingPeriodSeconds, TimeUnit.SECONDS); 
     }
 
     private void loop() {
         // step 8 - animator loop
         System.out.println("step 8 - animator loop");
-        
-        
         while (glfwWindowShouldClose(window) == GL_FALSE) {
-            
-            
-            
-            // System.out.println("Display "+frameCount);
             hmd.beginFrameTiming(++frameCount);
             Posef eyePoses[] = hmd.getEyePoses(frameCount, eyeOffsets);
             for (int eyeIndex = 0; eyeIndex < ovrEyeType.ovrEye_Count; eyeIndex++) {
@@ -408,11 +417,10 @@ public class RiftClient0440 {
             ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_FRAMEBUFFER, 0);
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
             GL11.glDisable(GL11.GL_TEXTURE_2D);
-
-            hmd.endFrame(poses, eyeTextures);
-            
-          //  glfwSwapBuffers(window);
             glfwPollEvents();
+
+            frames.incrementAndGet();
+            hmd.endFrame(poses, eyeTextures);
         }
     }
 
