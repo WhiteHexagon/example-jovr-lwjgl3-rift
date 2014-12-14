@@ -6,14 +6,9 @@ import static com.oculusvr.capi.OvrLibrary.ovrDistortionCaps.ovrDistortionCap_Vi
 import static com.oculusvr.capi.OvrLibrary.ovrTrackingCaps.ovrTrackingCap_MagYawCorrection;
 import static com.oculusvr.capi.OvrLibrary.ovrTrackingCaps.ovrTrackingCap_Orientation;
 import static com.oculusvr.capi.OvrLibrary.ovrTrackingCaps.ovrTrackingCap_Position;
-import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
-import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_FALSE;
 import static org.lwjgl.opengl.GL11.GL_TRUE;
-import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
-import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER;
-import static org.lwjgl.opengl.GL30.glBindFramebuffer;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.system.glfw.GLFW.GLFW_RELEASE;
@@ -25,7 +20,6 @@ import static org.lwjgl.system.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.system.glfw.GLFW.glfwSetErrorCallback;
 import static org.lwjgl.system.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.system.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.system.glfw.GLFW.glfwSwapBuffers;
 import static org.lwjgl.system.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.system.glfw.GLFW.glfwTerminate;
 import static org.lwjgl.system.glfw.GLFW.glfwWindowShouldClose;
@@ -38,6 +32,7 @@ import java.nio.IntBuffer;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.Sys;
+import org.lwjgl.opengl.ARBFramebufferObject;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.system.glfw.ErrorCallback;
@@ -104,10 +99,10 @@ public class RiftClient0440 {
     
     public RiftClient0440() {
         System.out.println("RiftClient0440()");
-        modelviewDFB =  ByteBuffer.allocateDirect(4*4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        modelviewDFB =  ByteBuffer.allocateDirect(4*4*4).order(ByteOrder.nativeOrder()).asFloatBuffer();
         projectionDFB = new FloatBuffer[2];
         for (int eye = 0; eye < 2; ++eye) {
-            projectionDFB[eye] = ByteBuffer.allocateDirect(4*4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+            projectionDFB[eye] = ByteBuffer.allocateDirect(4*4*4).order(ByteOrder.nativeOrder()).asFloatBuffer();
         }
     }
     
@@ -274,6 +269,8 @@ public class RiftClient0440 {
         glfwShowWindow(window);
         
         GLContext.createFromCurrent();
+        glClearColor(.42f, .67f, .87f, 1f);
+        
         // Lighting
         GL11.glEnable(GL11.GL_LIGHTING);
         GL11.glEnable(GL11.GL_LIGHT0);
@@ -331,6 +328,28 @@ public class RiftClient0440 {
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
         
+        //new projections
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        for (int eye = 0; eye < 2; ++eye) {
+            MatrixStack.PROJECTION.set(projections[eye]);
+            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            MatrixStack.PROJECTION.top().fillFloatBuffer(projectionDFB[eye], true);
+            projectionDFB[eye].rewind();
+            GL11.glLoadMatrix(projectionDFB[eye]);
+        }
+
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glLoadIdentity();
+        recenterView();
+        MatrixStack.MODELVIEW.set(player.invert());
+
+        modelviewDFB.clear();
+        MatrixStack.MODELVIEW.top().fillFloatBuffer(modelviewDFB, true);
+        modelviewDFB.rewind();
+        GL11.glLoadMatrix(modelviewDFB);
+
+    
+        
         
     }
 
@@ -338,10 +357,9 @@ public class RiftClient0440 {
         // step 8 - animator loop
         System.out.println("step 8 - animator loop");
         
-        GLContext.createFromCurrent();
-        glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
+        
         while (glfwWindowShouldClose(window) == GL_FALSE) {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            
             
             
             // System.out.println("Display "+frameCount);
@@ -387,15 +405,13 @@ public class RiftClient0440 {
                 }
                 mv.pop();
             }
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_FRAMEBUFFER, 0);
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
             GL11.glDisable(GL11.GL_TEXTURE_2D);
 
             hmd.endFrame(poses, eyeTextures);
             
-            
-            
-            glfwSwapBuffers(window);
+          //  glfwSwapBuffers(window);
             glfwPollEvents();
         }
     }

@@ -15,17 +15,10 @@ import static org.lwjgl.opengl.GL11.glTexParameteri;
 import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
 import static org.lwjgl.opengl.GL14.GL_DEPTH_COMPONENT24;
-import static org.lwjgl.opengl.GL30.GL_COLOR_ATTACHMENT0;
-import static org.lwjgl.opengl.GL30.GL_DEPTH_ATTACHMENT;
-import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER;
-import static org.lwjgl.opengl.GL30.GL_RENDERBUFFER;
-import static org.lwjgl.opengl.GL30.glBindFramebuffer;
-import static org.lwjgl.opengl.GL30.glBindRenderbuffer;
-import static org.lwjgl.opengl.GL30.glFramebufferRenderbuffer;
-import static org.lwjgl.opengl.GL30.glFramebufferTexture2D;
-import static org.lwjgl.opengl.GL30.glGenFramebuffers;
-import static org.lwjgl.opengl.GL30.glGenRenderbuffers;
-import static org.lwjgl.opengl.GL30.glRenderbufferStorage;
+
+import org.lwjgl.opengl.ARBFramebufferObject;
+import org.lwjgl.opengl.ContextCapabilities;
+import org.lwjgl.opengl.GL;
 
 
 public class FrameBuffer {
@@ -37,8 +30,27 @@ public class FrameBuffer {
 	public FrameBuffer(int width, int height) {
 		this.width = width;
 		this.height = height;
-		frameBuffer = glGenFramebuffers();
-		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+		
+        ContextCapabilities caps = GL.getCapabilities();
+        if ( caps.OpenGL30 ) {
+            System.out.println("30");
+            // use GL30
+        } else if ( caps.GL_ARB_framebuffer_object ) {
+            System.out.println("GL_ARB_framebuffer_object");
+            // use ARBFramebufferObject
+        } else if ( caps.GL_EXT_framebuffer_object ) {
+            System.out.println("GL_EXT_framebuffer_object");
+            // use EXTFramebufferObject
+        } else {
+            throw new UnsupportedOperationException();
+    }
+		
+        
+		
+		frameBuffer = ARBFramebufferObject.glGenFramebuffers();
+		
+		
+		ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_FRAMEBUFFER, frameBuffer);
 		texture = new Texture();
 		texture.bind();
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -47,25 +59,25 @@ public class FrameBuffer {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
 				GL_INT, (java.nio.ByteBuffer) null);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		ARBFramebufferObject.glFramebufferTexture2D(ARBFramebufferObject.GL_FRAMEBUFFER, ARBFramebufferObject.GL_COLOR_ATTACHMENT0,
 				GL_TEXTURE_2D, texture.id, 0);
-		depthBuffer = glGenRenderbuffers();
-		glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width,
+		depthBuffer = ARBFramebufferObject.glGenRenderbuffers();
+		ARBFramebufferObject.glBindRenderbuffer(ARBFramebufferObject.GL_RENDERBUFFER, depthBuffer);
+		ARBFramebufferObject.glRenderbufferStorage(ARBFramebufferObject.GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width,
 				height);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-				GL_RENDERBUFFER, depthBuffer);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		ARBFramebufferObject.glFramebufferRenderbuffer(ARBFramebufferObject.GL_FRAMEBUFFER, ARBFramebufferObject.GL_DEPTH_ATTACHMENT,
+		        ARBFramebufferObject.GL_RENDERBUFFER, depthBuffer);
+		ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_FRAMEBUFFER, 0);
 	}
 
 	public void activate() {
 		glViewport(0, 0, width, height);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+		ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_FRAMEBUFFER, frameBuffer);
 	}
 
 	public void deactivate() {
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	    ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_FRAMEBUFFER, 0);
 	}
 
 	public Texture getTexture() {

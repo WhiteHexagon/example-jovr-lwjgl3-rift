@@ -56,7 +56,7 @@ public class FixedTexture {
             buffer.rewind();
         }
 
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, sizei.x, sizei.y, 0, glFormat, glType, buffer);
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, sizei.x, sizei.y, 0, glFormat, glType, buffer);
 
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL11.GL_REPEAT);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT);
@@ -65,7 +65,7 @@ public class FixedTexture {
 
    //     GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAX_LEVEL, 0);
 
-        return new FixedTexture(textureId, sizei, GL11.GL_RGB, glFormat, glType, buffer);
+        return new FixedTexture(textureId, sizei, GL11.GL_RGBA, glFormat, glType, buffer);
     }
 
     public static FixedTexture createBuiltinTexture(BuiltinTexture builtinTexture) {
