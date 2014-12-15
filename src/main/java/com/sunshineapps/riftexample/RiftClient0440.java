@@ -50,6 +50,7 @@ import static org.lwjgl.opengl.GL11.glTranslatef;
 import static org.lwjgl.opengl.GL11.glVertex3f;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.system.glfw.GLFW.GLFW_KEY_R;
 import static org.lwjgl.system.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.system.glfw.GLFW.glfwCreateWindow;
 import static org.lwjgl.system.glfw.GLFW.glfwDestroyWindow;
@@ -311,8 +312,12 @@ public final class RiftClient0440 {
         WindowCallback.set(window, new WindowCallbackAdapter() {
             @Override
             public void key(long window, int key, int scancode, int action, int mods) {
-                if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
+                if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                     glfwSetWindowShouldClose(window, GL_TRUE);
+                }
+                if (key == GLFW_KEY_R && action == GLFW_RELEASE) {
+                    recenterView();
+                }
             }
         });
         glfwMakeContextCurrent(window);
@@ -378,7 +383,7 @@ public final class RiftClient0440 {
         glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
         
-        //new projections
+        // initial matrix stuff
         glMatrixMode(GL_PROJECTION);
         for (int eye = 0; eye < ovrEye_Count; ++eye) {
             MatrixStack.PROJECTION.set(projections[eye]);
