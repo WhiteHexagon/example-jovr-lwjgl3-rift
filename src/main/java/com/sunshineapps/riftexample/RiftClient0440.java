@@ -6,9 +6,48 @@ import static com.oculusvr.capi.OvrLibrary.ovrDistortionCaps.ovrDistortionCap_Vi
 import static com.oculusvr.capi.OvrLibrary.ovrTrackingCaps.ovrTrackingCap_MagYawCorrection;
 import static com.oculusvr.capi.OvrLibrary.ovrTrackingCaps.ovrTrackingCap_Orientation;
 import static com.oculusvr.capi.OvrLibrary.ovrTrackingCaps.ovrTrackingCap_Position;
+import static org.lwjgl.opengl.GL11.GL_AMBIENT;
+import static org.lwjgl.opengl.GL11.GL_COLOR_ARRAY;
+import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_COLOR_MATERIAL;
+import static org.lwjgl.opengl.GL11.GL_DECAL;
+import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_DIFFUSE;
 import static org.lwjgl.opengl.GL11.GL_FALSE;
+import static org.lwjgl.opengl.GL11.GL_LIGHT0;
+import static org.lwjgl.opengl.GL11.GL_LIGHTING;
+import static org.lwjgl.opengl.GL11.GL_MODELVIEW;
+import static org.lwjgl.opengl.GL11.GL_NORMAL_ARRAY;
+import static org.lwjgl.opengl.GL11.GL_POSITION;
+import static org.lwjgl.opengl.GL11.GL_PROJECTION;
+import static org.lwjgl.opengl.GL11.GL_QUADS;
+import static org.lwjgl.opengl.GL11.GL_SPECULAR;
+import static org.lwjgl.opengl.GL11.GL_SPOT_CUTOFF;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_COORD_ARRAY;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_ENV;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_ENV_MODE;
 import static org.lwjgl.opengl.GL11.GL_TRUE;
+import static org.lwjgl.opengl.GL11.GL_VERTEX_ARRAY;
+import static org.lwjgl.opengl.GL11.glBegin;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
+import static org.lwjgl.opengl.GL11.glColor4f;
+import static org.lwjgl.opengl.GL11.glDisable;
+import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL11.glEnableClientState;
+import static org.lwjgl.opengl.GL11.glEnd;
+import static org.lwjgl.opengl.GL11.glLight;
+import static org.lwjgl.opengl.GL11.glLightf;
+import static org.lwjgl.opengl.GL11.glLoadIdentity;
+import static org.lwjgl.opengl.GL11.glLoadMatrix;
+import static org.lwjgl.opengl.GL11.glMatrixMode;
+import static org.lwjgl.opengl.GL11.glNormal3f;
+import static org.lwjgl.opengl.GL11.glTexCoord2f;
+import static org.lwjgl.opengl.GL11.glTexEnvf;
+import static org.lwjgl.opengl.GL11.glTranslatef;
+import static org.lwjgl.opengl.GL11.glVertex3f;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.system.glfw.GLFW.GLFW_RELEASE;
@@ -20,7 +59,6 @@ import static org.lwjgl.system.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.system.glfw.GLFW.glfwSetErrorCallback;
 import static org.lwjgl.system.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.system.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.system.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.system.glfw.GLFW.glfwTerminate;
 import static org.lwjgl.system.glfw.GLFW.glfwWindowShouldClose;
 
@@ -37,7 +75,6 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.Sys;
 import org.lwjgl.opengl.ARBFramebufferObject;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.system.glfw.ErrorCallback;
 import org.lwjgl.system.glfw.GLFW;
@@ -53,7 +90,9 @@ import com.oculusvr.capi.GLTexture;
 import com.oculusvr.capi.GLTextureData;
 import com.oculusvr.capi.Hmd;
 import com.oculusvr.capi.OvrLibrary;
-import com.oculusvr.capi.OvrLibrary.ovrEyeType;
+import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Left;
+import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Right;
+import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Count;
 import com.oculusvr.capi.OvrRecti;
 import com.oculusvr.capi.OvrSizei;
 import com.oculusvr.capi.OvrVector2i;
@@ -67,20 +106,18 @@ import com.sunshineapps.riftexample.thirdparty.FrameBuffer;
 import com.sunshineapps.riftexample.thirdparty.MatrixStack;
 import com.sunshineapps.riftexample.thirdparty.RiftUtils;
 
-public class RiftClient0440 {
+public final class RiftClient0440 {
     private final boolean useDebugHMD = true;
-    
-    private static int RIFT_MONITOR = 0;        //0 based
+    private final int RIFT_MONITOR = 0;        //This needs to be set manually since we cant detect which is the rift currently. try 0 or 1
     private long window;
     private long riftMonitorId;
-    private final int riftWidth = 1920;
-    private final int riftHeight = 1080;
+    private final int riftWidth = 1920;         //DK2
+    private final int riftHeight = 1080;        //DK2
     
-    //opengl
-    private FrameBuffer leftEye;
-    private FrameBuffer rightEye;
+    //OpenGL
     private final FloatBuffer projectionDFB[];
     private final FloatBuffer modelviewDFB;
+    private FrameBuffer eyeDFB[];
     private FixedTexture cheq;
     
     // Rift Specific
@@ -92,7 +129,6 @@ public class RiftClient0440 {
     private final GLTexture eyeTextures[] = (GLTexture[]) new GLTexture().toArray(2);
     private final FovPort fovPorts[] = (FovPort[]) new FovPort().toArray(2);
     private final Matrix4f projections[] = new Matrix4f[2];
- //   private final int fboIds[] = new int[2];
     private float ipd = OvrLibrary.OVR_DEFAULT_IPD;
     private float eyeHeight = OvrLibrary.OVR_DEFAULT_EYE_HEIGHT;
     
@@ -108,6 +144,7 @@ public class RiftClient0440 {
         public void run() {
             int frameCount = frames.getAndSet(0);
             fps.set(frameCount/fpsReportingPeriodSeconds);
+            frames.addAndGet(frameCount-(fps.get()*fpsReportingPeriodSeconds));
             System.out.println(frameCount+" frames in "+fpsReportingPeriodSeconds+"s. "+fps.get()+"fps");
         }
     };
@@ -159,22 +196,21 @@ public class RiftClient0440 {
     }
     
     public final void drawPlaneXZ() {
-        GL11.glTexEnvf(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_DECAL);
-        //float[] normal = new float[] { 1f, 0f, 1f };
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
         float roomSize = 4.0f;
         float tileSize = 4.0f; // if same then there are two tiles per square
-        GL11.glBegin(GL11.GL_QUADS);
-        GL11.glNormal3f(1f, 0f, 1f);
-        GL11.glColor4f(1f, 1f, 1f, 1f);
-        GL11.glTexCoord2f(0f, 0f);
-        GL11.glVertex3f(-roomSize, 0f, -roomSize);
-        GL11.glTexCoord2f(tileSize, 0f);
-        GL11.glVertex3f(roomSize, 0f, -roomSize);
-        GL11.glTexCoord2f(tileSize, tileSize);
-        GL11.glVertex3f(roomSize, 0f, roomSize);
-        GL11.glTexCoord2f(0f, tileSize);
-        GL11.glVertex3f(-roomSize, 0f, roomSize);
-        GL11.glEnd();
+        glBegin(GL_QUADS);
+            glNormal3f(1f, 0f, 1f);
+            glColor4f(1f, 1f, 1f, 1f);
+            glTexCoord2f(0f, 0f);
+            glVertex3f(-roomSize, 0f, -roomSize);
+            glTexCoord2f(tileSize, 0f);
+            glVertex3f(roomSize, 0f, -roomSize);
+            glTexCoord2f(tileSize, tileSize);
+            glVertex3f(roomSize, 0f, roomSize);
+            glTexCoord2f(0f, tileSize);
+            glVertex3f(-roomSize, 0f, roomSize);
+        glEnd();
     }
     
     public void run() {
@@ -205,8 +241,8 @@ public class RiftClient0440 {
         OvrSizei resolution = hmd.Resolution;
         System.out.println("resolution= " + resolution.w + "x" + resolution.h);
 
-        OvrSizei recommendedTex0Size = hmd.getFovTextureSize(OvrLibrary.ovrEyeType.ovrEye_Left, hmd.DefaultEyeFov[0], 1.0f);
-        OvrSizei recommendedTex1Size = hmd.getFovTextureSize(OvrLibrary.ovrEyeType.ovrEye_Right, hmd.DefaultEyeFov[1], 1.0f);
+        OvrSizei recommendedTex0Size = hmd.getFovTextureSize(ovrEye_Left, hmd.DefaultEyeFov[ovrEye_Left], 1.0f);
+        OvrSizei recommendedTex1Size = hmd.getFovTextureSize(ovrEye_Right, hmd.DefaultEyeFov[ovrEye_Right], 1.0f);
         System.out.println("left= " + recommendedTex0Size.w + "x" + recommendedTex0Size.h);
         System.out.println("right= " + recommendedTex1Size.w + "x" + recommendedTex1Size.h);
         int displayW = recommendedTex0Size.w + recommendedTex1Size.w;
@@ -214,13 +250,13 @@ public class RiftClient0440 {
         OvrSizei renderTargetEyeSize = new OvrSizei(displayW / 2, displayH);    //single eye
         System.out.println("using eye size " + renderTargetEyeSize.w + "x" + renderTargetEyeSize.h);
 
-        eyeRenderViewport[0].Pos = new OvrVector2i(0, 0);
-        eyeRenderViewport[0].Size = renderTargetEyeSize;
-        eyeRenderViewport[1].Pos = eyeRenderViewport[0].Pos;
-        eyeRenderViewport[1].Size = renderTargetEyeSize;
+        eyeRenderViewport[ovrEye_Left].Pos = new OvrVector2i(0, 0);
+        eyeRenderViewport[ovrEye_Left].Size = renderTargetEyeSize;
+        eyeRenderViewport[ovrEye_Right].Pos = eyeRenderViewport[ovrEye_Left].Pos;
+        eyeRenderViewport[ovrEye_Right].Size = renderTargetEyeSize;
 
-        eyeTextures[0].ogl = new GLTextureData(new TextureHeader(renderTargetEyeSize, eyeRenderViewport[0]));
-        eyeTextures[1].ogl = new GLTextureData(new TextureHeader(renderTargetEyeSize, eyeRenderViewport[1]));
+        eyeTextures[ovrEye_Left].ogl = new GLTextureData(new TextureHeader(renderTargetEyeSize, eyeRenderViewport[ovrEye_Left]));
+        eyeTextures[ovrEye_Right].ogl = new GLTextureData(new TextureHeader(renderTargetEyeSize, eyeRenderViewport[ovrEye_Right]));
 
         // step 4 - tracking
         System.out.println("step 4 - tracking");
@@ -230,7 +266,7 @@ public class RiftClient0440 {
 
         // step 5 - FOV
         System.out.println("step 5 - FOV");
-        for (int eye = 0; eye < 2; ++eye) {
+        for (int eye = 0; eye < ovrEye_Count; ++eye) {
             fovPorts[eye] = hmd.DefaultEyeFov[eye];
             projections[eye] = RiftUtils.toMatrix4f(Hmd.getPerspectiveProjection(fovPorts[eye], 0.1f, 1000000f, true));
         }
@@ -242,7 +278,6 @@ public class RiftClient0440 {
         recenterView();
         System.out.println("eyeheight=" + eyeHeight + " ipd=" + ipd);
 
-
         System.out.println("Hello LWJGL " + Sys.getVersion() + "!");
         try {
             init();
@@ -250,6 +285,7 @@ public class RiftClient0440 {
             glfwDestroyWindow(window);
         } finally {
             glfwTerminate();
+            fpsCounter.shutdown();
         }
     }
 
@@ -258,12 +294,12 @@ public class RiftClient0440 {
         System.out.println("step 7 - window");
         
         glfwSetErrorCallback(ErrorCallback.Util.getDefault());
-        if (glfwInit() != GL11.GL_TRUE) {
+        if (glfwInit() != GL_TRUE) {
             throw new IllegalStateException("Unable to initialize GLFW");
         }
-        // glfwDefaultWindowHints();
+        // glfwDefaultWindowHints();    //not needed
         if (findRift()) {
-            window = glfwCreateWindow(riftWidth, riftHeight, "Hello World!", riftMonitorId, NULL);
+            window = glfwCreateWindow(riftWidth, riftHeight, "Hello World!", riftMonitorId, NULL);          //where is this text used?
             System.out.println("found rift and using it " + riftMonitorId);
         } else {
             window = glfwCreateWindow(riftWidth, riftHeight, "Hello World!", NULL, NULL);
@@ -280,16 +316,16 @@ public class RiftClient0440 {
             }
         });
         glfwMakeContextCurrent(window);
-        glfwSwapInterval(1);
+ //       glfwSwapInterval(1);              //not needed?
         glfwShowWindow(window);
         
         GLContext.createFromCurrent();
         glClearColor(.42f, .67f, .87f, 1f);
         
         // Lighting
-        GL11.glEnable(GL11.GL_LIGHTING);
-        GL11.glEnable(GL11.GL_LIGHT0);
-        GL11.glEnable(GL11.GL_COLOR_MATERIAL);
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
+        glEnable(GL_COLOR_MATERIAL);
 
         FloatBuffer lightPos = ByteBuffer.allocateDirect(4*4).order(ByteOrder.nativeOrder()).asFloatBuffer();
         lightPos.put(new float[]{0.5f, 0.0f, 1.0f, 0.0001f});
@@ -307,16 +343,16 @@ public class RiftClient0440 {
         spec.put(new float[]{1.0f, 1.0f, 1.0f, 1.0f});
         spec.rewind();
         
-        GL11.glLight(GL11.GL_LIGHT0, GL11.GL_AMBIENT, noAmbient);
-        GL11.glLight(GL11.GL_LIGHT0, GL11.GL_SPECULAR, spec);
-        GL11.glLight(GL11.GL_LIGHT0, GL11.GL_DIFFUSE, diffuse);
-        GL11.glLight(GL11.GL_LIGHT0, GL11.GL_POSITION, lightPos);
-        GL11.glLightf(GL11.GL_LIGHT0, GL11.GL_SPOT_CUTOFF, 45.0f);
+        glLight(GL_LIGHT0, GL_AMBIENT, noAmbient);
+        glLight(GL_LIGHT0, GL_SPECULAR, spec);
+        glLight(GL_LIGHT0, GL_DIFFUSE, diffuse);
+        glLight(GL_LIGHT0, GL_POSITION, lightPos);
+        glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 45.0f);
 
-        GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
-        GL11.glEnableClientState(GL11.GL_NORMAL_ARRAY);
-        GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
-        GL11.glEnableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glEnableClientState(GL_COLOR_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
         RenderAPIConfig rc = new RenderAPIConfig();
         rc.Header.BackBufferSize = hmd.Resolution;
@@ -329,41 +365,39 @@ public class RiftClient0440 {
             eyeOffsets[eye].z = eyeRenderDescs[eye].HmdToEyeViewOffset.z;
         }
 
-        leftEye = new FrameBuffer(eyeRenderViewport[ovrEyeType.ovrEye_Left].Size.w, eyeRenderViewport[ovrEyeType.ovrEye_Left].Size.h);
-        rightEye = new FrameBuffer(eyeRenderViewport[ovrEyeType.ovrEye_Right].Size.w, eyeRenderViewport[ovrEyeType.ovrEye_Right].Size.h);
-     //   fboIds[ovrEyeType.ovrEye_Left] = leftEye.getId();
-     //   fboIds[ovrEyeType.ovrEye_Right] = rightEye.getId();
+        eyeDFB = new FrameBuffer[2];
+        eyeDFB[ovrEye_Left] = new FrameBuffer(eyeRenderViewport[ovrEye_Left].Size.w, eyeRenderViewport[ovrEye_Left].Size.h);
+        eyeDFB[ovrEye_Right] = new FrameBuffer(eyeRenderViewport[ovrEye_Right].Size.w, eyeRenderViewport[ovrEye_Right].Size.h);
 
-        eyeTextures[ovrEyeType.ovrEye_Left].ogl.TexId = leftEye.getTexture().id;
-        eyeTextures[ovrEyeType.ovrEye_Right].ogl.TexId = rightEye.getTexture().id;
+        eyeTextures[ovrEye_Left].ogl.TexId = eyeDFB[ovrEye_Left].getTexture().id;
+        eyeTextures[ovrEye_Right].ogl.TexId = eyeDFB[ovrEye_Right].getTexture().id;
 
         // scene prep
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        glEnable(GL_TEXTURE_2D);
         cheq = FixedTexture.createBuiltinTexture(BuiltinTexture.tex_checker);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+        glDisable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
         
         //new projections
-        GL11.glMatrixMode(GL11.GL_PROJECTION);
-        for (int eye = 0; eye < 2; ++eye) {
+        glMatrixMode(GL_PROJECTION);
+        for (int eye = 0; eye < ovrEye_Count; ++eye) {
             MatrixStack.PROJECTION.set(projections[eye]);
-            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            glMatrixMode(GL_PROJECTION);
             MatrixStack.PROJECTION.top().fillFloatBuffer(projectionDFB[eye], true);
             projectionDFB[eye].rewind();
-            GL11.glLoadMatrix(projectionDFB[eye]);
+            glLoadMatrix(projectionDFB[eye]);
         }
 
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        GL11.glLoadIdentity();
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
         recenterView();
         MatrixStack.MODELVIEW.set(player.invert());
 
         modelviewDFB.clear();
         MatrixStack.MODELVIEW.top().fillFloatBuffer(modelviewDFB, true);
         modelviewDFB.rewind();
-        GL11.glLoadMatrix(modelviewDFB);
+        glLoadMatrix(modelviewDFB);
 
-    
         //fps
         fpsCounter.scheduleAtFixedRate(fpsJob, 0, fpsReportingPeriodSeconds, TimeUnit.SECONDS); 
     }
@@ -374,25 +408,20 @@ public class RiftClient0440 {
         while (glfwWindowShouldClose(window) == GL_FALSE) {
             hmd.beginFrameTiming(++frameCount);
             Posef eyePoses[] = hmd.getEyePoses(frameCount, eyeOffsets);
-            for (int eyeIndex = 0; eyeIndex < ovrEyeType.ovrEye_Count; eyeIndex++) {
+            for (int eyeIndex = 0; eyeIndex < ovrEye_Count; eyeIndex++) {
                 int eye = hmd.EyeRenderOrder[eyeIndex];
                 Posef pose = eyePoses[eye];
                 poses[eye].Orientation = pose.Orientation;
                 poses[eye].Position = pose.Position;
 
-//              GL11.glBindFramebuffer(GL11.GL_FRAMEBUFFER, fboIds[eye]);
-                if (eye == ovrEyeType.ovrEye_Left) {
-                    leftEye.activate();
-                } else {
-                    rightEye.activate();
-                }
+                eyeDFB[eye].activate();
                 
-                GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                GL11.glMatrixMode(GL11.GL_PROJECTION);
-                GL11.glLoadMatrix(projectionDFB[eye]);
+                glMatrixMode(GL_PROJECTION);
+                glLoadMatrix(projectionDFB[eye]);
 
-                GL11.glMatrixMode(GL11.GL_MODELVIEW);
+                glMatrixMode(GL_MODELVIEW);
                 MatrixStack mv = MatrixStack.MODELVIEW;
                 mv.push();
                 {
@@ -402,21 +431,21 @@ public class RiftClient0440 {
                     modelviewDFB.clear();
                     MatrixStack.MODELVIEW.top().fillFloatBuffer(modelviewDFB, true);
                     modelviewDFB.rewind();
-                    GL11.glLoadMatrix(modelviewDFB);
+                    glLoadMatrix(modelviewDFB);
 
                     // tiles on floor
-                    GL11.glEnable(GL11.GL_TEXTURE_2D);
-                    GL11.glBindTexture(GL11.GL_TEXTURE_2D, cheq.getId());
-                    GL11.glTranslatef(0.0f, -eyeHeight, 0.0f);
+                    glEnable(GL_TEXTURE_2D);
+                    glBindTexture(GL_TEXTURE_2D, cheq.getId());
+                    glTranslatef(0.0f, -eyeHeight, 0.0f);
                     drawPlaneXZ();
-                    GL11.glTranslatef(0.0f, eyeHeight, 0.0f);
-                    GL11.glDisable(GL11.GL_TEXTURE_2D);
+                    glTranslatef(0.0f, eyeHeight, 0.0f);
+                    glDisable(GL_TEXTURE_2D);
                 }
                 mv.pop();
             }
             ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_FRAMEBUFFER, 0);
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glDisable(GL_TEXTURE_2D);
             glfwPollEvents();
 
             frames.incrementAndGet();
