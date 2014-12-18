@@ -49,6 +49,9 @@ import static org.lwjgl.opengl.GL11.glTexEnvf;
 import static org.lwjgl.opengl.GL11.glTranslatef;
 import static org.lwjgl.opengl.GL11.glVertex3f;
 import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.glfw.GLFW.GLFW_CURSOR;
+import static org.lwjgl.system.glfw.GLFW.GLFW_CURSOR_DISABLED;
+import static org.lwjgl.system.glfw.GLFW.GLFW_CURSOR_NORMAL;
 import static org.lwjgl.system.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.system.glfw.GLFW.GLFW_KEY_R;
 import static org.lwjgl.system.glfw.GLFW.GLFW_RELEASE;
@@ -58,6 +61,7 @@ import static org.lwjgl.system.glfw.GLFW.glfwInit;
 import static org.lwjgl.system.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.system.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.system.glfw.GLFW.glfwSetErrorCallback;
+import static org.lwjgl.system.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.system.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.system.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.system.glfw.GLFW.glfwTerminate;
@@ -91,9 +95,11 @@ import com.oculusvr.capi.GLTexture;
 import com.oculusvr.capi.GLTextureData;
 import com.oculusvr.capi.Hmd;
 import com.oculusvr.capi.OvrLibrary;
+
 import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Left;
 import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Right;
 import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Count;
+
 import com.oculusvr.capi.OvrRecti;
 import com.oculusvr.capi.OvrSizei;
 import com.oculusvr.capi.OvrVector2i;
@@ -173,7 +179,6 @@ public final class RiftClient0440 {
                 int width = GLFWvidmode.width(modes);
                 int height = GLFWvidmode.height(modes);
                 // System.out.println(width + "," + height + "," + monitorId);
-
                 if (width == riftWidth && height == riftHeight) {
                     System.out.println("found dimensions match: " + width + "," + height + "," + monitorId);
                     riftMonitorId = monitorId;
@@ -201,7 +206,8 @@ public final class RiftClient0440 {
         float roomSize = 4.0f;
         float tileSize = 4.0f; // if same then there are two tiles per square
         glBegin(GL_QUADS);
-            glNormal3f(1f, 0f, 1f);
+        {
+            glNormal3f(0f, 1f, 0f);
             glColor4f(1f, 1f, 1f, 1f);
             glTexCoord2f(0f, 0f);
             glVertex3f(-roomSize, 0f, -roomSize);
@@ -211,6 +217,7 @@ public final class RiftClient0440 {
             glVertex3f(roomSize, 0f, roomSize);
             glTexCoord2f(0f, tileSize);
             glVertex3f(-roomSize, 0f, roomSize);
+        }
         glEnd();
     }
     
@@ -323,6 +330,10 @@ public final class RiftClient0440 {
         glfwMakeContextCurrent(window);
  //       glfwSwapInterval(1);              //not needed?
         glfwShowWindow(window);
+        
+//        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);        //only after display create?
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);        //only after display create?
+        //glfwSetInputMode(id, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);        //hide mouse
         
         GLContext.createFromCurrent();
         glClearColor(.42f, .67f, .87f, 1f);
