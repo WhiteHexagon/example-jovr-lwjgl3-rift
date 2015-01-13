@@ -10,7 +10,9 @@ import static org.lwjgl.opengl.GL11.GL_AMBIENT;
 import static org.lwjgl.opengl.GL11.GL_COLOR_ARRAY;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_COLOR_MATERIAL;
+import static org.lwjgl.opengl.GL11.GL_CULL_FACE;
 import static org.lwjgl.opengl.GL11.GL_DECAL;
+import static org.lwjgl.opengl.GL11.GL_BLEND;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DIFFUSE;
 import static org.lwjgl.opengl.GL11.GL_FALSE;
@@ -29,6 +31,8 @@ import static org.lwjgl.opengl.GL11.GL_TEXTURE_ENV;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_ENV_MODE;
 import static org.lwjgl.opengl.GL11.GL_TRUE;
 import static org.lwjgl.opengl.GL11.GL_VERTEX_ARRAY;
+import static org.lwjgl.opengl.GL11.GL_CCW;
+import static org.lwjgl.opengl.GL11.GL_CW;
 import static org.lwjgl.opengl.GL11.glBegin;
 import static org.lwjgl.opengl.GL11.glBindTexture;
 import static org.lwjgl.opengl.GL11.glClear;
@@ -38,6 +42,7 @@ import static org.lwjgl.opengl.GL11.glDisable;
 import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.opengl.GL11.glEnableClientState;
 import static org.lwjgl.opengl.GL11.glEnd;
+import static org.lwjgl.opengl.GL11.glFrontFace;
 import static org.lwjgl.opengl.GL11.glLight;
 import static org.lwjgl.opengl.GL11.glLightf;
 import static org.lwjgl.opengl.GL11.glLoadIdentity;
@@ -201,6 +206,7 @@ public final class RiftClient0440 {
         hmd.recenterPose();
     }
     
+    //Z- is into the screen
     public final void drawPlaneXZ() {
         glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
         float roomSize = 4.0f;
@@ -209,18 +215,22 @@ public final class RiftClient0440 {
         {
             glNormal3f(0f, 1f, 0f);
             glColor4f(1f, 1f, 1f, 1f);
+            
+            glVertex3f(-roomSize, 0f, roomSize);
             glTexCoord2f(0f, 0f);
-            glVertex3f(-roomSize, 0f, -roomSize);
+            
+            glVertex3f(roomSize, 0f, roomSize);
             glTexCoord2f(tileSize, 0f);
+            
             glVertex3f(roomSize, 0f, -roomSize);
             glTexCoord2f(tileSize, tileSize);
-            glVertex3f(roomSize, 0f, roomSize);
+            
+            glVertex3f(-roomSize, 0f, -roomSize);
             glTexCoord2f(0f, tileSize);
-            glVertex3f(-roomSize, 0f, roomSize);
         }
         glEnd();
     }
-    
+ 
     public void run() {
         System.out.println(""+System.getProperty("java.version"));
         
@@ -337,6 +347,9 @@ public final class RiftClient0440 {
         
         GLContext.createFromCurrent();
         glClearColor(.42f, .67f, .87f, 1f);
+        
+        glEnable(GL_CULL_FACE);
+        glFrontFace(GL_CCW);
         
         // Lighting
         glEnable(GL_LIGHTING);

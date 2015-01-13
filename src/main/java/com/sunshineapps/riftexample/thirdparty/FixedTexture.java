@@ -10,62 +10,23 @@ import org.lwjgl.opengl.GL11;
  * @author gbarbieri
  */
 public class FixedTexture {
+    private final int textureId;
+    private final ByteBuffer buffer;
 
-    private int id;
-    private Vec2i size;
-  //  private int internalFormat;
-  //  private int glFormat;
-  //  private int glType;
-  //  private ByteBuffer data;
-
-    private FixedTexture(int id, Vec2i size, int internalFormat, int glFormat, int glType, ByteBuffer data) {
-        this.id = id;
-        this.size = size;
-    //    this.internalFormat = internalFormat;
-    //    this.glFormat = glFormat;
-    //    this.glType = glType;
-   //     this.data = data;
-    }
-
-    private static FixedTexture create(int format, Vec2i sizei, byte[] data) {
-
-        int glFormat, glType = GL11.GL_UNSIGNED_BYTE;
-
-        switch (format & TextureFormat.TypeMask) {
-
-            case TextureFormat.RGBA:
-                glFormat = GL11.GL_RGBA;
-                break;
-
-            default:
-                return null;
-        }
-
-        int textureId = GL11.glGenTextures();
+    private FixedTexture(Vec2i sizei, byte[] data) {
+        textureId = GL11.glGenTextures();
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureId);
+        
+        buffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.nativeOrder());
+        buffer.put(data);
+        buffer.rewind();
 
-  //      boolean isSRGB = ((format & TextureFormat.TypeMask) == TextureFormat.RGBA && (format & TextureFormat.SRGB) != 0);
-  //      boolean isDepth = ((format & TextureFormat.Depth) != 0);
-
-       // int internalFormat = isSRGB ? GL11.GL_SRGB_ALPHA : isDepth ? GL11.GL_DEPTH_COMPONENT32F : glFormat;
-
-        ByteBuffer buffer = null;
-        if (data != null) {
-            buffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.nativeOrder());
-            buffer.put(data);
-            buffer.rewind();
-        }
-
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, sizei.x, sizei.y, 0, glFormat, glType, buffer);
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, sizei.x, sizei.y, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
 
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL11.GL_REPEAT);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_REPEAT);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
-
-   //     GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAX_LEVEL, 0);
-
-        return new FixedTexture(textureId, sizei, GL11.GL_RGBA, glFormat, glType, buffer);
     }
 
     public static FixedTexture createBuiltinTexture(BuiltinTexture builtinTexture) {
@@ -140,19 +101,14 @@ public class FixedTexture {
                     }
                 }
         }
-        return FixedTexture.create(TextureFormat.RGBA, new Vec2i(256, 256), data);
-    }
-
-    public Vec2i getSize() {
-        return size;
+        return new FixedTexture(new Vec2i(256, 256), data);
     }
 
     public int getId() {
-        return id;
+        return textureId;
     }
 
     public enum BuiltinTexture {
-
         tex_none,
         tex_checker,
         tex_panel,
