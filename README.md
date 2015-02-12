@@ -1,11 +1,11 @@
 example-jovr-lwjgl3-rift
 ========================
 
-A simple example using JGLW3, JOVR and Oculus Rift DK2
+A simple example using LWJGL 3, JOVR and Oculus Rift DK2
 
 Work In Progress.
 
-I get 113fps on OSX 10.8.5 on a 4 year old MBP.
+I get ~113fps on OSX 10.8.5 on a mid-2010 MBP.
 
 Dont forget to set library path for OS specific LWJGL files
 
