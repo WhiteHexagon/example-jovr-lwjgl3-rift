@@ -72,6 +72,7 @@ import static org.lwjgl.system.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.system.glfw.GLFW.glfwTerminate;
 import static org.lwjgl.system.glfw.GLFW.glfwWindowShouldClose;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -92,6 +93,7 @@ import org.lwjgl.system.glfw.GLFWvidmode;
 import org.lwjgl.system.glfw.WindowCallback;
 import org.lwjgl.system.glfw.WindowCallbackAdapter;
 import org.saintandreas.math.Matrix4f;
+import org.saintandreas.math.Quaternion;
 import org.saintandreas.math.Vector3f;
 
 import com.oculusvr.capi.EyeRenderDesc;
@@ -105,6 +107,8 @@ import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Left;
 import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Right;
 import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Count;
 
+import com.oculusvr.capi.OvrMatrix4f;
+import com.oculusvr.capi.OvrQuaternionf;
 import com.oculusvr.capi.OvrRecti;
 import com.oculusvr.capi.OvrSizei;
 import com.oculusvr.capi.OvrVector2i;
@@ -116,7 +120,8 @@ import com.sunshineapps.riftexample.thirdparty.FixedTexture;
 import com.sunshineapps.riftexample.thirdparty.FixedTexture.BuiltinTexture;
 import com.sunshineapps.riftexample.thirdparty.FrameBuffer;
 import com.sunshineapps.riftexample.thirdparty.MatrixStack;
-import com.sunshineapps.riftexample.thirdparty.RiftUtils;
+import com.sunshineapps.riftexample.thirdparty.Texture;
+import com.sunshineapps.riftexample.thirdparty.TextureLoader;
 
 public final class RiftClient0440 {
     private final boolean useDebugHMD = true;
@@ -130,7 +135,12 @@ public final class RiftClient0440 {
     private final FloatBuffer projectionDFB[];
     private final FloatBuffer modelviewDFB;
     private FrameBuffer eyeDFB[];
-    private FixedTexture cheq;
+//    private FixedTexture cheq;
+    private Texture floorTexture;
+    private Texture wallTexture;
+    private Texture ceilingTexture;
+    private float roomSize = 6.0f;
+    private float roomHeight = 2.6f*2;
     
     // Rift Specific
     private Hmd hmd;
@@ -175,7 +185,7 @@ public final class RiftClient0440 {
         IntBuffer modeCount = BufferUtils.createIntBuffer(1);
         for (int i = 0; i < monitors.limit(); i++) {
             long monitorId = monitors.get(i);
-//            System.out.println("monitor: " + monitorId);
+            System.out.println("monitor: " + monitorId);
             ByteBuffer modes = GLFW.glfwGetVideoModes(monitorId, modeCount);
             System.out.println("mode count=" + modeCount.get(0));
             for (int j = 0; j < modeCount.get(0); j++) {
@@ -207,26 +217,149 @@ public final class RiftClient0440 {
     }
     
     //Z- is into the screen
-    public final void drawPlaneXZ() {
+    public final void drawPlaneFloor() {
         glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-        float roomSize = 4.0f;
-        float tileSize = 4.0f; // if same then there are two tiles per square
+        
+        float tileSize = 1.0f; // if same then there are two tiles per square
         glBegin(GL_QUADS);
         {
             glNormal3f(0f, 1f, 0f);
             glColor4f(1f, 1f, 1f, 1f);
             
-            glVertex3f(-roomSize, 0f, roomSize);
             glTexCoord2f(0f, 0f);
+            glVertex3f(-roomSize, 0f, roomSize);
             
-            glVertex3f(roomSize, 0f, roomSize);
             glTexCoord2f(tileSize, 0f);
+            glVertex3f(roomSize, 0f, roomSize);
             
-            glVertex3f(roomSize, 0f, -roomSize);
             glTexCoord2f(tileSize, tileSize);
+            glVertex3f(roomSize, 0f, -roomSize);
             
-            glVertex3f(-roomSize, 0f, -roomSize);
             glTexCoord2f(0f, tileSize);
+            glVertex3f(-roomSize, 0f, -roomSize);
+        }
+        glEnd();
+    }
+    
+    
+    public final void drawPlaneCeiling() {
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+        
+        float tileSize = 1.0f; // if same then there are two tiles per square
+        glBegin(GL_QUADS);
+        {
+            glNormal3f(0f, -1f, 0f);
+            glColor4f(1f, 1f, 1f, 1f);
+            
+            glTexCoord2f(0f, 0f);
+            glVertex3f(-roomSize, 0f, roomSize);
+            
+            glTexCoord2f(0f, tileSize);
+            glVertex3f(-roomSize, 0f, -roomSize);
+            
+            glTexCoord2f(tileSize, tileSize);
+            glVertex3f(roomSize, 0f, -roomSize);
+            
+            glTexCoord2f(tileSize, 0f);
+            glVertex3f(roomSize, 0f, roomSize);
+        }
+        glEnd();
+    }
+    
+    //Z- is into the screen
+    public final void drawPlaneWallLeft() {     //appears in front
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+        
+        float tileSize = 1.0f; 
+        glBegin(GL_QUADS);
+        {
+            glNormal3f(1f, 0f, 0f);
+            glColor4f(1f, 1f, 1f, 1f);
+            
+            glTexCoord2f(tileSize*6, 0f);
+            glVertex3f(-roomSize, 0f, roomSize);
+            
+            glTexCoord2f(0f, 0f);
+            glVertex3f(-roomSize, 0f, -roomSize);
+            
+            glTexCoord2f(0f, tileSize);
+            glVertex3f(-roomSize, roomHeight, -roomSize);
+            
+            glTexCoord2f(tileSize*6, tileSize);
+            glVertex3f(-roomSize, roomHeight, roomSize);
+        }
+        glEnd();
+    }
+    
+    //Z- is into the screen
+    public final void drawPlaneWallFront() {    //appears to right
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+        
+        float tileSize = 1.0f; 
+        glBegin(GL_QUADS);
+        {
+            glNormal3f(0f, 0f, 1f);
+            glColor4f(1f, 1f, 1f, 1f);
+            
+            glTexCoord2f(tileSize*6, 0f);
+            glVertex3f(-roomSize, 0f, -roomSize);
+
+            glTexCoord2f(0f, 0f);
+            glVertex3f(roomSize, 0f, -roomSize);
+
+            glTexCoord2f(0f, tileSize);
+            glVertex3f(roomSize, roomHeight, -roomSize);
+
+            glTexCoord2f(tileSize*6, tileSize);
+            glVertex3f(-roomSize, roomHeight, -roomSize);
+        }
+        glEnd();
+    }
+    
+    public final void drawPlaneWallRight() {    //appears behind
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+        
+        float tileSize = 1.0f; 
+        glBegin(GL_QUADS);
+        {
+            glNormal3f(-1f, 0f, 0f);
+            glColor4f(1f, 1f, 1f, 1f);
+            
+            glTexCoord2f(tileSize*6, 0f);
+            glVertex3f(roomSize, 0f, -roomSize);
+            
+            glTexCoord2f(0f, 0f);
+            glVertex3f(roomSize, 0f, roomSize);
+            
+            glTexCoord2f(0f, tileSize);
+            glVertex3f(roomSize, roomHeight, roomSize);
+            
+            glTexCoord2f(tileSize*6, tileSize);
+            glVertex3f(roomSize, roomHeight, -roomSize);
+        }
+        glEnd();
+    }
+   
+    public final void drawPlaneWallBack() {    //appears 
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+        
+        float tileSize = 1.0f; 
+        glBegin(GL_QUADS);
+        {
+            glNormal3f(0f, 0f, -1f);
+            glColor4f(1f, 1f, 1f, 1f);
+            
+            glTexCoord2f(tileSize*6, 0f);
+            glVertex3f(roomSize, 0f, roomSize);
+
+            glTexCoord2f(0f, 0f);
+            glVertex3f(-roomSize, 0f, roomSize);
+            
+            glTexCoord2f(0f, tileSize);
+            glVertex3f(-roomSize, roomHeight, roomSize);
+            
+            glTexCoord2f(tileSize*6, tileSize);
+            glVertex3f(roomSize, roomHeight, roomSize);
         }
         glEnd();
     }
@@ -286,7 +419,7 @@ public final class RiftClient0440 {
         System.out.println("step 5 - FOV");
         for (int eye = 0; eye < ovrEye_Count; ++eye) {
             fovPorts[eye] = hmd.DefaultEyeFov[eye];
-            projections[eye] = RiftUtils.toMatrix4f(Hmd.getPerspectiveProjection(fovPorts[eye], 0.1f, 1000000f, true));
+            projections[eye] = toMatrix4f(Hmd.getPerspectiveProjection(fovPorts[eye], 0.1f, 1000000f, true));
         }
 
         // step 6 - player params
@@ -402,10 +535,21 @@ public final class RiftClient0440 {
         eyeTextures[ovrEye_Right].ogl.TexId = eyeDFB[ovrEye_Right].getTexture().id;
 
         // scene prep
-        glEnable(GL_TEXTURE_2D);
-        cheq = FixedTexture.createBuiltinTexture(BuiltinTexture.tex_checker);
-        glDisable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        TextureLoader loader = new TextureLoader();
+        try {
+            floorTexture = loader.getTexture("floor512512.png");
+            wallTexture = loader.getTexture("panel512512.png");
+            ceilingTexture = loader.getTexture("ceiling512512.png");
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
+//      does not work for some reason  
+//        glEnable(GL_TEXTURE_2D);
+//        cheq = new FixedTexture(BuiltinTexture.tex_checker);
+//        glDisable(GL_TEXTURE_2D);
+//        glBindTexture(GL_TEXTURE_2D, 0);
         
         // initial matrix stuff
         glMatrixMode(GL_PROJECTION);
@@ -454,8 +598,8 @@ public final class RiftClient0440 {
                 MatrixStack mv = MatrixStack.MODELVIEW;
                 mv.push();
                 {
-                    mv.preTranslate(RiftUtils.toVector3f(poses[eye].Position).mult(-1));
-                    mv.preRotate(RiftUtils.toQuaternion(poses[eye].Orientation).inverse());
+                    mv.preTranslate(toVector3f(poses[eye].Position).mult(-1));
+                    mv.preRotate(toQuaternion(poses[eye].Orientation).inverse());
                     mv.translate(new Vector3f(0, eyeHeight, 0));
                     modelviewDFB.clear();
                     MatrixStack.MODELVIEW.top().fillFloatBuffer(modelviewDFB, true);
@@ -464,9 +608,26 @@ public final class RiftClient0440 {
 
                     // tiles on floor
                     glEnable(GL_TEXTURE_2D);
-                    glBindTexture(GL_TEXTURE_2D, cheq.getId());
+               //     glBindTexture(GL_TEXTURE_2D, cheq.getId());
+                    
+                    floorTexture.bind();
                     glTranslatef(0.0f, -eyeHeight, 0.0f);
-                    drawPlaneXZ();
+                    drawPlaneFloor();
+                    floorTexture.unbind();
+                    
+                    wallTexture.bind();
+                    drawPlaneWallLeft();
+                    drawPlaneWallFront();
+                    drawPlaneWallRight();
+                    drawPlaneWallBack();
+                    wallTexture.unbind();
+                    
+                    ceilingTexture.bind();
+                    glTranslatef(0.0f, roomHeight, 0.0f);
+                    drawPlaneCeiling();
+                    glTranslatef(0.0f, -roomHeight, 0.0f);
+                    ceilingTexture.unbind();
+                    
                     glTranslatef(0.0f, eyeHeight, 0.0f);
                     glDisable(GL_TEXTURE_2D);
                 }
@@ -480,6 +641,18 @@ public final class RiftClient0440 {
             frames.incrementAndGet();
             hmd.endFrame(poses, eyeTextures);
         }
+    }
+    
+    public Vector3f toVector3f(OvrVector3f v) {
+        return new Vector3f(v.x, v.y, v.z);
+    }
+    
+    public Quaternion toQuaternion(OvrQuaternionf q) {
+        return new Quaternion(q.x, q.y, q.z, q.w);
+    }
+
+    public Matrix4f toMatrix4f(OvrMatrix4f m) {
+        return new org.saintandreas.math.Matrix4f(m.M).transpose();
     }
 
     public static void main(String[] args) {
