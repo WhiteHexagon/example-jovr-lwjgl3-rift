@@ -130,6 +130,7 @@ public final class ShaderProgram120 {
                 if (glfwWindowShouldClose(window) == GL_TRUE) {
                     shouldShutdon.set(true);
                 }
+                //TODO fps measure
             }
         } finally {
             glfwSetWindowShouldClose(window, GL_TRUE);
