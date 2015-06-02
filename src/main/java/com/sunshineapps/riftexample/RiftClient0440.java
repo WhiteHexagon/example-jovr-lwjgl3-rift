@@ -3,16 +3,37 @@ package com.sunshineapps.riftexample;
 import static com.oculusvr.capi.OvrLibrary.ovrDistortionCaps.ovrDistortionCap_Chromatic;
 import static com.oculusvr.capi.OvrLibrary.ovrDistortionCaps.ovrDistortionCap_TimeWarp;
 import static com.oculusvr.capi.OvrLibrary.ovrDistortionCaps.ovrDistortionCap_Vignette;
+import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Count;
+import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Left;
+import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Right;
 import static com.oculusvr.capi.OvrLibrary.ovrTrackingCaps.ovrTrackingCap_MagYawCorrection;
 import static com.oculusvr.capi.OvrLibrary.ovrTrackingCaps.ovrTrackingCap_Orientation;
 import static com.oculusvr.capi.OvrLibrary.ovrTrackingCaps.ovrTrackingCap_Position;
+import static org.lwjgl.glfw.Callbacks.errorCallbackPrint;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_R;
+import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
+import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
+import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
+import static org.lwjgl.glfw.GLFW.glfwInit;
+import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
+import static org.lwjgl.glfw.GLFW.glfwPollEvents;
+import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
+import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
+import static org.lwjgl.glfw.GLFW.glfwShowWindow;
+import static org.lwjgl.glfw.GLFW.glfwTerminate;
+import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 import static org.lwjgl.opengl.GL11.GL_AMBIENT;
+import static org.lwjgl.opengl.GL11.GL_CCW;
 import static org.lwjgl.opengl.GL11.GL_COLOR_ARRAY;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_COLOR_MATERIAL;
 import static org.lwjgl.opengl.GL11.GL_CULL_FACE;
 import static org.lwjgl.opengl.GL11.GL_DECAL;
-import static org.lwjgl.opengl.GL11.GL_BLEND;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DIFFUSE;
 import static org.lwjgl.opengl.GL11.GL_FALSE;
@@ -31,8 +52,6 @@ import static org.lwjgl.opengl.GL11.GL_TEXTURE_ENV;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_ENV_MODE;
 import static org.lwjgl.opengl.GL11.GL_TRUE;
 import static org.lwjgl.opengl.GL11.GL_VERTEX_ARRAY;
-import static org.lwjgl.opengl.GL11.GL_CCW;
-import static org.lwjgl.opengl.GL11.GL_CW;
 import static org.lwjgl.opengl.GL11.glBegin;
 import static org.lwjgl.opengl.GL11.glBindTexture;
 import static org.lwjgl.opengl.GL11.glClear;
@@ -43,10 +62,10 @@ import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.opengl.GL11.glEnableClientState;
 import static org.lwjgl.opengl.GL11.glEnd;
 import static org.lwjgl.opengl.GL11.glFrontFace;
-import static org.lwjgl.opengl.GL11.glLight;
 import static org.lwjgl.opengl.GL11.glLightf;
+import static org.lwjgl.opengl.GL11.glLightfv;
 import static org.lwjgl.opengl.GL11.glLoadIdentity;
-import static org.lwjgl.opengl.GL11.glLoadMatrix;
+import static org.lwjgl.opengl.GL11.glLoadMatrixf;
 import static org.lwjgl.opengl.GL11.glMatrixMode;
 import static org.lwjgl.opengl.GL11.glNormal3f;
 import static org.lwjgl.opengl.GL11.glTexCoord2f;
@@ -54,23 +73,6 @@ import static org.lwjgl.opengl.GL11.glTexEnvf;
 import static org.lwjgl.opengl.GL11.glTranslatef;
 import static org.lwjgl.opengl.GL11.glVertex3f;
 import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.system.glfw.GLFW.GLFW_CURSOR;
-import static org.lwjgl.system.glfw.GLFW.GLFW_CURSOR_DISABLED;
-import static org.lwjgl.system.glfw.GLFW.GLFW_CURSOR_NORMAL;
-import static org.lwjgl.system.glfw.GLFW.GLFW_KEY_ESCAPE;
-import static org.lwjgl.system.glfw.GLFW.GLFW_KEY_R;
-import static org.lwjgl.system.glfw.GLFW.GLFW_RELEASE;
-import static org.lwjgl.system.glfw.GLFW.glfwCreateWindow;
-import static org.lwjgl.system.glfw.GLFW.glfwDestroyWindow;
-import static org.lwjgl.system.glfw.GLFW.glfwInit;
-import static org.lwjgl.system.glfw.GLFW.glfwMakeContextCurrent;
-import static org.lwjgl.system.glfw.GLFW.glfwPollEvents;
-import static org.lwjgl.system.glfw.GLFW.glfwSetErrorCallback;
-import static org.lwjgl.system.glfw.GLFW.glfwSetInputMode;
-import static org.lwjgl.system.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.system.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.system.glfw.GLFW.glfwTerminate;
-import static org.lwjgl.system.glfw.GLFW.glfwWindowShouldClose;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -85,13 +87,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.Sys;
+import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWvidmode;
 import org.lwjgl.opengl.ARBFramebufferObject;
 import org.lwjgl.opengl.GLContext;
-import org.lwjgl.system.glfw.ErrorCallback;
-import org.lwjgl.system.glfw.GLFW;
-import org.lwjgl.system.glfw.GLFWvidmode;
-import org.lwjgl.system.glfw.WindowCallback;
-import org.lwjgl.system.glfw.WindowCallbackAdapter;
 import org.saintandreas.math.Matrix4f;
 import org.saintandreas.math.Quaternion;
 import org.saintandreas.math.Vector3f;
@@ -102,11 +103,6 @@ import com.oculusvr.capi.GLTexture;
 import com.oculusvr.capi.GLTextureData;
 import com.oculusvr.capi.Hmd;
 import com.oculusvr.capi.OvrLibrary;
-
-import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Left;
-import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Right;
-import static com.oculusvr.capi.OvrLibrary.ovrEyeType.ovrEye_Count;
-
 import com.oculusvr.capi.OvrMatrix4f;
 import com.oculusvr.capi.OvrQuaternionf;
 import com.oculusvr.capi.OvrRecti;
@@ -116,8 +112,6 @@ import com.oculusvr.capi.OvrVector3f;
 import com.oculusvr.capi.Posef;
 import com.oculusvr.capi.RenderAPIConfig;
 import com.oculusvr.capi.TextureHeader;
-import com.sunshineapps.riftexample.thirdparty.FixedTexture;
-import com.sunshineapps.riftexample.thirdparty.FixedTexture.BuiltinTexture;
 import com.sunshineapps.riftexample.thirdparty.FrameBuffer;
 import com.sunshineapps.riftexample.thirdparty.MatrixStack;
 import com.sunshineapps.riftexample.thirdparty.Texture;
@@ -125,11 +119,13 @@ import com.sunshineapps.riftexample.thirdparty.TextureLoader;
 
 public final class RiftClient0440 {
     private final boolean useDebugHMD = true;
-    private final int RIFT_MONITOR = 0;        //This needs to be set manually since we cant detect which is the rift currently. try 0 or 1
+    private final int RIFT_MONITOR = 1;        //This needs to be set manually since we cant detect which is the rift currently. try 0 or 1
     private long window;
     private long riftMonitorId;
     private final int riftWidth = 1920;         //DK2
     private final int riftHeight = 1080;        //DK2
+    private GLFWErrorCallback errorfun;
+    private GLFWKeyCallback keyfun;
     
     //OpenGL
     private final FloatBuffer projectionDFB[];
@@ -437,6 +433,8 @@ public final class RiftClient0440 {
         } finally {
             glfwTerminate();
             fpsCounter.shutdown();
+            keyfun.release();
+            errorfun.release();
         }
     }
 
@@ -444,10 +442,13 @@ public final class RiftClient0440 {
         // step 7 - opengl window
         System.out.println("step 7 - window");
         
-        glfwSetErrorCallback(ErrorCallback.Util.getDefault());
+        errorfun = errorCallbackPrint(System.err);
+        glfwSetErrorCallback(errorfun);
+        
         if (glfwInit() != GL_TRUE) {
             throw new IllegalStateException("Unable to initialize GLFW");
         }
+        
         // glfwDefaultWindowHints();    //not needed
         if (findRift()) {
             window = glfwCreateWindow(riftWidth, riftHeight, "Hello World!", riftMonitorId, NULL);          //where is this text used?
@@ -459,17 +460,23 @@ public final class RiftClient0440 {
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
-        WindowCallback.set(window, new WindowCallbackAdapter() {
+        keyfun = new GLFWKeyCallback() {
             @Override
-            public void key(long window, int key, int scancode, int action, int mods) {
-                if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
-                    glfwSetWindowShouldClose(window, GL_TRUE);
+            public void invoke(long window, int key, int scancode, int action, int mods) {
+                if ( action != GLFW_RELEASE) {
+                    return;
                 }
-                if (key == GLFW_KEY_R && action == GLFW_RELEASE) {
-                    recenterView();
+                switch (key) {
+                    case GLFW_KEY_ESCAPE:
+                        glfwSetWindowShouldClose(window, GL_TRUE);
+                        break;
+                    case GLFW_KEY_R:
+                        recenterView();
+                        break;
                 }
             }
-        });
+        };
+        glfwSetKeyCallback(window, keyfun);
         glfwMakeContextCurrent(window);
  //       glfwSwapInterval(1);              //not needed?
         glfwShowWindow(window);
@@ -505,10 +512,10 @@ public final class RiftClient0440 {
         spec.put(new float[]{1.0f, 1.0f, 1.0f, 1.0f});
         spec.rewind();
         
-        glLight(GL_LIGHT0, GL_AMBIENT, noAmbient);
-        glLight(GL_LIGHT0, GL_SPECULAR, spec);
-        glLight(GL_LIGHT0, GL_DIFFUSE, diffuse);
-        glLight(GL_LIGHT0, GL_POSITION, lightPos);
+        glLightfv(GL_LIGHT0, GL_AMBIENT, noAmbient);
+        glLightfv(GL_LIGHT0, GL_SPECULAR, spec);
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
         glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 45.0f);
 
         glEnableClientState(GL_VERTEX_ARRAY);
@@ -558,7 +565,7 @@ public final class RiftClient0440 {
             glMatrixMode(GL_PROJECTION);
             MatrixStack.PROJECTION.top().fillFloatBuffer(projectionDFB[eye], true);
             projectionDFB[eye].rewind();
-            glLoadMatrix(projectionDFB[eye]);
+            glLoadMatrixf(projectionDFB[eye]);
         }
 
         glMatrixMode(GL_MODELVIEW);
@@ -569,7 +576,7 @@ public final class RiftClient0440 {
         modelviewDFB.clear();
         MatrixStack.MODELVIEW.top().fillFloatBuffer(modelviewDFB, true);
         modelviewDFB.rewind();
-        glLoadMatrix(modelviewDFB);
+        glLoadMatrixf(modelviewDFB);
 
         //fps
         fpsCounter.scheduleAtFixedRate(fpsJob, 0, fpsReportingPeriodSeconds, TimeUnit.SECONDS); 
@@ -592,7 +599,7 @@ public final class RiftClient0440 {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 glMatrixMode(GL_PROJECTION);
-                glLoadMatrix(projectionDFB[eye]);
+                glLoadMatrixf(projectionDFB[eye]);
 
                 glMatrixMode(GL_MODELVIEW);
                 MatrixStack mv = MatrixStack.MODELVIEW;
@@ -604,7 +611,7 @@ public final class RiftClient0440 {
                     modelviewDFB.clear();
                     MatrixStack.MODELVIEW.top().fillFloatBuffer(modelviewDFB, true);
                     modelviewDFB.rewind();
-                    glLoadMatrix(modelviewDFB);
+                    glLoadMatrixf(modelviewDFB);
 
                     // tiles on floor
                     glEnable(GL_TEXTURE_2D);
